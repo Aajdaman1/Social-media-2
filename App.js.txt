@@ -1,0 +1,73 @@
+// Load saved posts
+window.onload = function() {
+  loadFeed();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+};
+
+function addPost() {
+  const input = document.getElementById("postInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  let posts = JSON.parse(localStorage.getItem("posts")) || [];
+  posts.unshift({ text, time: new Date().toLocaleString() });
+  localStorage.setItem("posts", JSON.stringify(posts));
+
+  input.value = "";
+  loadFeed();
+}
+
+function loadFeed() {
+  const feedList = document.getElementById("feedList");
+  feedList.innerHTML = "";
+  let posts = JSON.parse(localStorage.getItem("posts")) || [];
+
+  posts.forEach(post => {
+    let li = document.createElement("li");
+    li.textContent = `${post.text} — ${post.time}`;
+    feedList.appendChild(li);
+  });
+}
+
+function backupData() {
+  let posts = localStorage.getItem("posts");
+  if (!posts) return alert("No data to backup.");
+  
+  const blob = new Blob([posts], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "backup.json";
+  a.click();
+  
+  URL.revokeObjectURL(url);
+}
+
+function restoreData() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+  
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      localStorage.setItem("posts", reader.result);
+      loadFeed();
+    };
+    reader.readAsText(file);
+  };
+  
+  input.click();
+}
+
+function selfDestruct() {
+  if (confirm("Are you sure? This will erase everything!")) {
+    localStorage.clear();
+    loadFeed();
+    alert("All data wiped!");
+  }
+}
